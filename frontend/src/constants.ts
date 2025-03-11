@@ -16,54 +16,63 @@ export const TOKENS = [
     symbol: "ETH",
     name: "Ethereum",
     decimals: 18,
+    address: CONTRACT_ADDRESSES.weth, // Using WETH address for ETH
     logoURI: "https://raw.githubusercontent.com/Uniswap/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
   },
   {
     symbol: "USDT",
     name: "Tether USD",
     decimals: 6,
+    address: CONTRACT_ADDRESSES.usdt,
     logoURI: "https://raw.githubusercontent.com/Uniswap/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png"
   },
   {
     symbol: "BTC",
     name: "Bitcoin",
     decimals: 8,
+    address: "0x0000000000000000000000000000000000000001", // Placeholder address
     logoURI: "https://assets.coingecko.com/coins/images/1/large/bitcoin.png"
   },
   {
     symbol: "LINK",
     name: "Chainlink",
     decimals: 18,
+    address: CONTRACT_ADDRESSES.link,
     logoURI: "https://raw.githubusercontent.com/Uniswap/assets/master/blockchains/ethereum/assets/0x514910771AF9Ca656af840dff83E8264EcF986CA/logo.png"
   },
   {
     symbol: "MATIC",
     name: "Polygon",
     decimals: 18,
+    address: "0x0000000000000000000000000000000000000002", // Placeholder address
     logoURI: "https://raw.githubusercontent.com/Uniswap/assets/master/blockchains/ethereum/assets/0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0/logo.png"
   },
   {
     symbol: "SOL",
     name: "Solana",
     decimals: 9,
+    address: "0x0000000000000000000000000000000000000003", // Placeholder address
     logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png"
   },
   {
     symbol: "AVAX",
     name: "Avalanche",
     decimals: 18,
+    address: "0x0000000000000000000000000000000000000004", // Placeholder address
     logoURI: "https://raw.githubusercontent.com/Uniswap/assets/master/blockchains/avalanchec/assets/0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7/logo.png"
   },
   {
     symbol: "DOGE",
     name: "Dogecoin",
     decimals: 8,
+    address: "0x0000000000000000000000000000000000000005", // Placeholder address
     logoURI: "https://assets.coingecko.com/coins/images/5/large/dogecoin.png"
   },
   {
     symbol: "SHIB",
     name: "Shiba Inu",
     decimals: 18,
+    address: "0x0000000000000000000000000000000000000006", // Placeholder address
     logoURI: "https://assets.coingecko.com/coins/images/11939/large/shiba.png"
   },
   // New tokens added
@@ -71,36 +80,42 @@ export const TOKENS = [
     symbol: "XRP",
     name: "XRP",
     decimals: 6,
+    address: "0x0000000000000000000000000000000000000007", // Placeholder address
     logoURI: "https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png"
   },
   {
     symbol: "ADA",
     name: "Cardano",
     decimals: 6,
+    address: "0x0000000000000000000000000000000000000008", // Placeholder address
     logoURI: "https://assets.coingecko.com/coins/images/975/large/cardano.png"
   },
   {
     symbol: "DOT",
     name: "Polkadot",
     decimals: 10,
+    address: "0x0000000000000000000000000000000000000009", // Placeholder address
     logoURI: "https://assets.coingecko.com/coins/images/12171/large/polkadot.png"
   },
   {
     symbol: "UNI",
     name: "Uniswap",
     decimals: 18,
+    address: "0x0000000000000000000000000000000000000010", // Placeholder address
     logoURI: "https://assets.coingecko.com/coins/images/12504/large/uniswap-uni.png"
   },
   {
     symbol: "ATOM",
     name: "Cosmos",
     decimals: 6,
+    address: "0x0000000000000000000000000000000000000011", // Placeholder address
     logoURI: "https://assets.coingecko.com/coins/images/1481/large/cosmos_hub.png"
   },
   {
     symbol: "LTC",
     name: "Litecoin",
     decimals: 8,
+    address: "0x0000000000000000000000000000000000000012", // Placeholder address
     logoURI: "https://assets.coingecko.com/coins/images/2/large/litecoin.png"
   }
 ];
