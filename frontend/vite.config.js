@@ -33,5 +33,8 @@ export default defineConfig({
       port: 5173,
       protocol: 'ws',
     },
+    fs: {
+      strict: false,
+    },
   },
 })

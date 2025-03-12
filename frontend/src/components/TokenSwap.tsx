@@ -19,7 +19,7 @@ interface Token {
 }
 
 const TokenSwap: React.FC = () => {
-  const { isConnected, account } = useWeb3();
+  const { isConnected, account, contracts, signer } = useWeb3();
   const [fromToken, setFromToken] = useState<Token>(TOKENS[0]);
   const [toToken, setToToken] = useState<Token>(TOKENS[2]); // Default to USDT
   const [fromAmount, setFromAmount] = useState<string>('');
@@ -36,9 +36,6 @@ const TokenSwap: React.FC = () => {
         setErrorMessage(null);
         
         try {
-          // Get the Web3 context
-          const { contracts, isConnected } = useWeb3();
-          
           // Fetch prices using the utility functions (handles all fallbacks)
           const fromTokenPrice = await fetchTokenPrice(contracts?.priceOracle, fromToken.symbol);
           const toTokenPrice = await fetchTokenPrice(contracts?.priceOracle, toToken.symbol);
@@ -72,7 +69,7 @@ const TokenSwap: React.FC = () => {
     };
     
     fetchExchangeRate();
-  }, [fromToken, toToken, fromAmount]);
+  }, [fromToken, toToken, fromAmount, contracts, isConnected]);
 
   const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -134,8 +131,6 @@ const TokenSwap: React.FC = () => {
     setErrorMessage(null);
     
     try {
-      const { contracts, signer } = useWeb3();
-      
       if (!contracts?.router || !signer) {
         throw new Error("Router contract or signer not available");
       }
