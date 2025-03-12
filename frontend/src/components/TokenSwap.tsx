@@ -18,6 +18,22 @@ interface Token {
   logoURI: string;
 }
 
+/**
+ * Formats a token amount to the correct number of decimal places based on token decimals
+ * @param amount The amount to format
+ * @param decimals The number of decimals for the token
+ * @returns Formatted amount string with correct decimal precision
+ */
+const formatTokenAmount = (amount: string | number, decimals: number): string => {
+  if (!amount || isNaN(Number(amount))) return '0';
+  
+  // Convert to number and format with the correct number of decimals
+  const formattedAmount = parseFloat(amount.toString()).toFixed(decimals);
+  
+  // Remove trailing zeros after decimal point
+  return formattedAmount.replace(/(\.\d*?[1-9])0+$|\.0*$/, '$1');
+};
+
 const TokenSwap: React.FC = () => {
   const { isConnected, account, contracts, signer } = useWeb3();
   const [fromToken, setFromToken] = useState<Token>(TOKENS[0]);
@@ -150,11 +166,11 @@ const TokenSwap: React.FC = () => {
         
         const path = [contracts.weth.address, toToken.address];
         const tx = await contracts.router.swapExactETHForTokens(
-          ethers.parseUnits(amountOutMin.toString(), toToken.decimals),
+          ethers.parseUnits(formatTokenAmount(amountOutMin.toString(), toToken.decimals), toToken.decimals),
           path,
           account,
           deadline,
-          { value: ethers.parseUnits(fromAmount, 18) }
+          { value: ethers.parseUnits(formatTokenAmount(fromAmount, 18), 18) }
         );
         
         await tx.wait();
@@ -175,13 +191,13 @@ const TokenSwap: React.FC = () => {
         
         const approveTx = await tokenContract.approve(
           contracts.router.address,
-          ethers.parseUnits(fromAmount, fromToken.decimals)
+          ethers.parseUnits(formatTokenAmount(fromAmount, fromToken.decimals), fromToken.decimals)
         );
         await approveTx.wait();
         
         const tx = await contracts.router.swapExactTokensForETH(
-          ethers.parseUnits(fromAmount, fromToken.decimals),
-          ethers.parseUnits(amountOutMin.toString(), 18),
+          ethers.parseUnits(formatTokenAmount(fromAmount, fromToken.decimals), fromToken.decimals),
+          ethers.parseUnits(formatTokenAmount(amountOutMin.toString(), 18), 18),
           path,
           account,
           deadline
@@ -201,13 +217,13 @@ const TokenSwap: React.FC = () => {
         
         const approveTx = await tokenContract.approve(
           contracts.router.address,
-          ethers.parseUnits(fromAmount, fromToken.decimals)
+          ethers.parseUnits(formatTokenAmount(fromAmount, fromToken.decimals), fromToken.decimals)
         );
         await approveTx.wait();
         
         const tx = await contracts.router.swapExactTokensForTokens(
-          ethers.parseUnits(fromAmount, fromToken.decimals),
-          ethers.parseUnits(amountOutMin.toString(), toToken.decimals),
+          ethers.parseUnits(formatTokenAmount(fromAmount, fromToken.decimals), fromToken.decimals),
+          ethers.parseUnits(formatTokenAmount(amountOutMin.toString(), toToken.decimals), toToken.decimals),
           path,
           account,
           deadline
@@ -224,7 +240,11 @@ const TokenSwap: React.FC = () => {
       setErrorMessage('Swap successful!');
     } catch (error: any) {
       console.error('Error executing swap:', error);
-      setErrorMessage(`Swap failed: ${error.message || 'Unknown error'}`);
+      if (error.code === 'NUMERIC_FAULT' && error.fault === 'underflow') {
+        setErrorMessage(`Swap failed: Too many decimal places for token format. Please try a different amount.`);
+      } else {
+        setErrorMessage(`Swap failed: ${error.message || 'Unknown error'}`);
+      }
     } finally {
       setIsLoading(false);
     }
