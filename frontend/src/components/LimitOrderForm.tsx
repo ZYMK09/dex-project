@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
-import { TRADING_PAIRS, TOKENS, PRICE_FEEDS } from '../constants';
+import { TRADING_PAIRS, TOKENS } from '../constants';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -51,16 +51,12 @@ const LimitOrderForm: React.FC = () => {
           throw new Error("Provider or price oracle not available");
         }
         
-        // Get price feed addresses from constants
-        const basePriceFeed = `${baseToken.symbol}/USD`;
-        const quotePriceFeed = `${quoteToken.symbol}/USD`;
-        
-        // Get prices in USD for both tokens
-        const baseTokenPrice = await contracts.priceOracle.getLatestPrice(
-          PRICE_FEEDS[basePriceFeed as keyof typeof PRICE_FEEDS] || PRICE_FEEDS['ETH/USD']
+        // Get prices in USD for both tokens directly using token addresses
+        const baseTokenPrice = await contracts.priceOracle.getPrice(
+          baseToken.address
         );
-        const quoteTokenPrice = await contracts.priceOracle.getLatestPrice(
-          PRICE_FEEDS[quotePriceFeed as keyof typeof PRICE_FEEDS] || PRICE_FEEDS['USDT/USD']
+        const quoteTokenPrice = await contracts.priceOracle.getPrice(
+          quoteToken.address
         );
         
         // Calculate market price (baseToken price in terms of quoteToken)

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
-import { TRADING_PAIRS, TOKENS, PRICE_FEEDS } from '../constants';
+import { TRADING_PAIRS, TOKENS } from '../constants';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -66,16 +66,12 @@ const LiquidityPool: React.FC = () => {
           throw new Error("Provider or price oracle not available");
         }
         
-        // Get price feed addresses from constants
-        const token1PriceFeed = `${token1.symbol}/USD`;
-        const token2PriceFeed = `${token2.symbol}/USD`;
-        
-        // Get prices in USD for both tokens
-        const token1Price = await contracts.priceOracle.getLatestPrice(
-          PRICE_FEEDS[token1PriceFeed as keyof typeof PRICE_FEEDS] || PRICE_FEEDS['ETH/USD']
+        // Get prices in USD for both tokens directly using token addresses
+        const token1Price = await contracts.priceOracle.getPrice(
+          token1.address
         );
-        const token2Price = await contracts.priceOracle.getLatestPrice(
-          PRICE_FEEDS[token2PriceFeed as keyof typeof PRICE_FEEDS] || PRICE_FEEDS['USDT/USD']
+        const token2Price = await contracts.priceOracle.getPrice(
+          token2.address
         );
         
         // Calculate exchange rate (token1 price in terms of token2)

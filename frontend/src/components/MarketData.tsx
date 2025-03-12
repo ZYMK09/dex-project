@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { TOKENS, PRICE_FEEDS } from '../constants';
+import { TOKENS } from '../constants';
 import { useWeb3 } from '../context/Web3Context';
 import { ArrowDown, ArrowUp, RefreshCw } from 'lucide-react';
 
@@ -40,10 +40,8 @@ const MarketData: React.FC = () => {
         
         for (const token of TOKENS) {
           try {
-            const priceFeedAddress = PRICE_FEEDS[`${token.symbol}/USD` as keyof typeof PRICE_FEEDS];
-            if (!priceFeedAddress) continue;
-            
-            const price = await contracts.priceOracle.getLatestPrice(priceFeedAddress);
+            // Get price directly from the PriceOracle contract using token address
+            const price = await contracts.priceOracle.getPrice(token.address);
             const priceNumber = parseFloat(price.toString()) / (10 ** 8); // Chainlink prices are 8 decimals
             
             // Generate simulated data for other metrics

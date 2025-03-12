@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
-import { TOKENS, PRICE_FEEDS } from '../constants';
+import { TOKENS } from '../constants';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -51,16 +51,12 @@ const TokenSwap: React.FC = () => {
             throw new Error("Provider or price oracle not available");
           }
           
-          // Get price feed addresses from constants
-          const fromTokenPriceFeed = `${fromToken.symbol}/USD`;
-          const toTokenPriceFeed = `${toToken.symbol}/USD`;
-          
-          // Get prices in USD for both tokens
-          const fromTokenPrice = await contracts.priceOracle.getLatestPrice(
-            PRICE_FEEDS[fromTokenPriceFeed as keyof typeof PRICE_FEEDS] || PRICE_FEEDS['ETH/USD']
+          // Get prices in USD for both tokens directly using token addresses
+          const fromTokenPrice = await contracts.priceOracle.getPrice(
+            fromToken.address
           );
-          const toTokenPrice = await contracts.priceOracle.getLatestPrice(
-            PRICE_FEEDS[toTokenPriceFeed as keyof typeof PRICE_FEEDS] || PRICE_FEEDS['USDT/USD']
+          const toTokenPrice = await contracts.priceOracle.getPrice(
+            toToken.address
           );
           
           // Calculate exchange rate (fromToken price in terms of toToken)

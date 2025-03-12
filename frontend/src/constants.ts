@@ -122,76 +122,154 @@ export const TOKENS = [
 
 // Trading pairs
 export const TRADING_PAIRS = [
+  // ETH pairs
   {
     name: "ETH/USDT",
     baseToken: "ETH",
     quoteToken: "USDT"
   },
   {
+    name: "ETH/BTC",
+    baseToken: "ETH",
+    quoteToken: "BTC"
+  },
+  // BTC pairs
+  {
     name: "BTC/USDT",
     baseToken: "BTC",
     quoteToken: "USDT"
   },
+  // LINK pairs
   {
     name: "LINK/USDT",
     baseToken: "LINK",
     quoteToken: "USDT"
   },
   {
+    name: "LINK/ETH",
+    baseToken: "LINK",
+    quoteToken: "ETH"
+  },
+  // MATIC pairs
+  {
     name: "MATIC/USDT",
     baseToken: "MATIC",
     quoteToken: "USDT"
   },
+  {
+    name: "MATIC/ETH",
+    baseToken: "MATIC",
+    quoteToken: "ETH"
+  },
+  // SOL pairs
   {
     name: "SOL/USDT",
     baseToken: "SOL",
     quoteToken: "USDT"
   },
   {
+    name: "SOL/ETH",
+    baseToken: "SOL",
+    quoteToken: "ETH"
+  },
+  // AVAX pairs
+  {
     name: "AVAX/USDT",
     baseToken: "AVAX",
     quoteToken: "USDT"
   },
+  {
+    name: "AVAX/ETH",
+    baseToken: "AVAX",
+    quoteToken: "ETH"
+  },
+  // DOGE pairs
   {
     name: "DOGE/USDT",
     baseToken: "DOGE",
     quoteToken: "USDT"
   },
   {
+    name: "DOGE/ETH",
+    baseToken: "DOGE",
+    quoteToken: "ETH"
+  },
+  // SHIB pairs
+  {
     name: "SHIB/USDT",
     baseToken: "SHIB",
     quoteToken: "USDT"
   },
-  // New trading pairs
+  {
+    name: "SHIB/ETH",
+    baseToken: "SHIB",
+    quoteToken: "ETH"
+  },
+  // XRP pairs
   {
     name: "XRP/USDT",
     baseToken: "XRP",
     quoteToken: "USDT"
   },
   {
+    name: "XRP/ETH",
+    baseToken: "XRP",
+    quoteToken: "ETH"
+  },
+  // ADA pairs
+  {
     name: "ADA/USDT",
     baseToken: "ADA",
     quoteToken: "USDT"
   },
+  {
+    name: "ADA/ETH",
+    baseToken: "ADA",
+    quoteToken: "ETH"
+  },
+  // DOT pairs
   {
     name: "DOT/USDT",
     baseToken: "DOT",
     quoteToken: "USDT"
   },
   {
+    name: "DOT/ETH",
+    baseToken: "DOT",
+    quoteToken: "ETH"
+  },
+  // UNI pairs
+  {
     name: "UNI/USDT",
     baseToken: "UNI",
     quoteToken: "USDT"
   },
+  {
+    name: "UNI/ETH",
+    baseToken: "UNI",
+    quoteToken: "ETH"
+  },
+  // ATOM pairs
   {
     name: "ATOM/USDT",
     baseToken: "ATOM",
     quoteToken: "USDT"
   },
   {
+    name: "ATOM/ETH",
+    baseToken: "ATOM",
+    quoteToken: "ETH"
+  },
+  // LTC pairs
+  {
     name: "LTC/USDT",
     baseToken: "LTC",
     quoteToken: "USDT"
+  },
+  {
+    name: "LTC/ETH",
+    baseToken: "LTC",
+    quoteToken: "ETH"
   }
 ];
 
