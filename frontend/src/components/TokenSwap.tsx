@@ -7,6 +7,8 @@ import { Input } from './ui/input';
 import { Select } from './ui/select';
 import { ArrowDownUp, AlertCircle, Info } from 'lucide-react';
 import { fetchTokenPrice } from '../utils/priceUtils';
+import { ethers } from 'ethers';
+import ERC20ABI from '../abis/ERC20.json';
 
 interface Token {
   symbol: string;
@@ -132,19 +134,102 @@ const TokenSwap: React.FC = () => {
     setErrorMessage(null);
     
     try {
-      // In a real implementation, this would call the router contract to execute the swap
-      // For now, we'll just simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const { contracts, signer } = useWeb3();
+      
+      if (!contracts?.router || !signer) {
+        throw new Error("Router contract or signer not available");
+      }
+      
+      // Calculate deadline (20 minutes from now)
+      const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+      
+      // Calculate minimum output amount with slippage
+      const amountOutMin = parseFloat(toAmount) * (1 - slippage / 100);
+      
+      // Execute the swap based on token types
+      if (fromToken.symbol === 'ETH' && toToken.symbol !== 'ETH') {
+        // ETH to Token
+        if (!contracts.weth) {
+          throw new Error("WETH contract not available");
+        }
+        
+        const path = [contracts.weth.address, toToken.address];
+        const tx = await contracts.router.swapExactETHForTokens(
+          ethers.parseUnits(amountOutMin.toString(), toToken.decimals),
+          path,
+          account,
+          deadline,
+          { value: ethers.parseUnits(fromAmount, 18) }
+        );
+        
+        await tx.wait();
+      } else if (fromToken.symbol !== 'ETH' && toToken.symbol === 'ETH') {
+        // Token to ETH
+        if (!contracts.weth) {
+          throw new Error("WETH contract not available");
+        }
+        
+        const path = [fromToken.address, contracts.weth.address];
+        
+        // Approve router to spend tokens
+        const tokenContract = new ethers.Contract(
+          fromToken.address, 
+          ERC20ABI.abi, 
+          signer
+        );
+        
+        const approveTx = await tokenContract.approve(
+          contracts.router.address,
+          ethers.parseUnits(fromAmount, fromToken.decimals)
+        );
+        await approveTx.wait();
+        
+        const tx = await contracts.router.swapExactTokensForETH(
+          ethers.parseUnits(fromAmount, fromToken.decimals),
+          ethers.parseUnits(amountOutMin.toString(), 18),
+          path,
+          account,
+          deadline
+        );
+        
+        await tx.wait();
+      } else {
+        // Token to Token
+        const path = [fromToken.address, toToken.address];
+        
+        // Approve router to spend tokens
+        const tokenContract = new ethers.Contract(
+          fromToken.address, 
+          ERC20ABI.abi, 
+          signer
+        );
+        
+        const approveTx = await tokenContract.approve(
+          contracts.router.address,
+          ethers.parseUnits(fromAmount, fromToken.decimals)
+        );
+        await approveTx.wait();
+        
+        const tx = await contracts.router.swapExactTokensForTokens(
+          ethers.parseUnits(fromAmount, fromToken.decimals),
+          ethers.parseUnits(amountOutMin.toString(), toToken.decimals),
+          path,
+          account,
+          deadline
+        );
+        
+        await tx.wait();
+      }
       
       // Reset form after successful swap
       setFromAmount('');
       setToAmount('');
       
       // Show success message
-      setErrorMessage('Swap successful! (This is a simulation)');
-    } catch (error) {
+      setErrorMessage('Swap successful!');
+    } catch (error: any) {
       console.error('Error executing swap:', error);
-      setErrorMessage('Swap failed. Please try again.');
+      setErrorMessage(`Swap failed: ${error.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }

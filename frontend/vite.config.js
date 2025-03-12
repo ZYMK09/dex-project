@@ -15,7 +15,19 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     allowedHosts: true, // Allow all hosts to access the dev server
-    cors: true, // Disable CORS restrictions
+    cors: true, // Allow all CORS
+    proxy: {
+      '/api/coingecko': {
+        target: 'https://api.coingecko.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/coingecko/, ''),
+      },
+      '/api/coinmarketcap': {
+        target: 'https://pro-api.coinmarketcap.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/coinmarketcap/, ''),
+      }
+    },
     hmr: {
       host: 'localhost',
       port: 5173,
