@@ -7,6 +7,7 @@ import { Input } from './ui/input';
 import { Select } from './ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { AlertCircle, CheckCircle2, Droplets, ArrowDownUp } from 'lucide-react';
+import { fetchTokenPrice } from '../utils/priceUtils';
 
 interface PoolStats {
   tvl: string;
@@ -41,7 +42,7 @@ const LiquidityPool: React.FC = () => {
     apr: '12.34%'
   });
   
-  // Fetch real exchange rate from Chainlink oracle
+  // Fetch real exchange rate from price oracle or fallback sources
   useEffect(() => {
     const fetchExchangeRate = async () => {
       try {
@@ -54,40 +55,27 @@ const LiquidityPool: React.FC = () => {
         
         if (!token1 || !token2) return;
 
-        // If we're in development and don't have provider or contracts, use simulated data
-        if (import.meta.env.DEV && (!isConnected || !provider || !contracts.priceOracle)) {
-          console.log('Development environment without provider, using simulated exchange rate');
-          const simulatedRate = Math.random() * 2000 + 1000; // Random rate between 1000 and 3000
-          setExchangeRate(simulatedRate);
-          return;
+        // Fetch prices using the utility functions (handles all fallbacks)
+        const token1Price = await fetchTokenPrice(contracts?.priceOracle, token1.symbol);
+        const token2Price = await fetchTokenPrice(contracts?.priceOracle, token2.symbol);
+        
+        if (token1Price !== null && token2Price !== null) {
+          // Calculate exchange rate (token1 price in terms of token2)
+          const rate = token1Price / token2Price;
+          setExchangeRate(rate);
+          
+          console.log(`Exchange rate: 1 ${token1.symbol} = ${rate.toFixed(6)} ${token2.symbol}`);
+          console.log(`Price source: ${isConnected && contracts?.priceOracle ? 'Chainlink' : 'CoinGecko/Fallback'}`);
+        } else {
+          throw new Error("Could not fetch token prices");
         }
-        
-        if (!isConnected || !provider || !contracts.priceOracle) {
-          throw new Error("Provider or price oracle not available");
-        }
-        
-        // Get prices in USD for both tokens directly using token addresses
-        const token1Price = await contracts.priceOracle.getPrice(
-          token1.address
-        );
-        const token2Price = await contracts.priceOracle.getPrice(
-          token2.address
-        );
-        
-        // Calculate exchange rate (token1 price in terms of token2)
-        const rate = parseFloat(token1Price.toString()) / parseFloat(token2Price.toString());
-        setExchangeRate(rate);
-        
-        console.log(`Using real-time Chainlink price data: 1 ${token1.symbol} = ${rate.toFixed(6)} ${token2.symbol}`);
       } catch (error) {
-        console.error("Error fetching exchange rate:", error);
+        console.error("Error calculating exchange rate:", error);
         
         // Fallback to simulated rate in case of error
-        if (import.meta.env.DEV) {
-          console.log('Error fetching real prices, falling back to simulated data');
-          const simulatedRate = Math.random() * 2000 + 1000;
-          setExchangeRate(simulatedRate);
-        }
+        console.log('Error fetching real prices, falling back to simulated data');
+        const simulatedRate = Math.random() * 2000 + 1000;
+        setExchangeRate(simulatedRate);
       }
     };
     
