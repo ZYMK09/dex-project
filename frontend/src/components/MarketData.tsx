@@ -4,6 +4,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { TOKENS } from '../constants';
 import { useWeb3 } from '../context/Web3Context';
 import { ArrowDown, ArrowUp, RefreshCw } from 'lucide-react';
+import { 
+  fetchTokenPrice, 
+  getSimulatedPriceChange, 
+  getCoinGeckoId,
+  calculateRealisticVolume,
+  calculateRealisticMarketCap
+} from '../utils/priceUtils';
 
 interface TokenMarketData {
   symbol: string;
@@ -13,6 +20,7 @@ interface TokenMarketData {
   volume24h: number;
   marketCap: number;
   logoURI: string;
+  priceSource?: string; // 'Chainlink', 'CoinGecko', or 'Simulated'
 }
 
 const MarketData: React.FC = () => {
@@ -34,81 +42,67 @@ const MarketData: React.FC = () => {
   const fetchMarketData = async () => {
     setIsLoading(true);
     try {
-      // If we have a provider and contracts, fetch real data from Chainlink
-      if (isConnected && provider && contracts?.priceOracle) {
-        const realMarketData: TokenMarketData[] = [];
-        
-        for (const token of TOKENS) {
-          try {
-            // Get price directly from the PriceOracle contract using token address
-            const price = await contracts.priceOracle.getPrice(token.address);
-            const priceNumber = parseFloat(price.toString()) / (10 ** 8); // Chainlink prices are 8 decimals
+      // Prepare array for market data
+      const marketDataArray: TokenMarketData[] = [];
+      
+      // Process each token
+      for (const token of TOKENS) {
+        try {
+          // Fetch price using the utility function (handles Chainlink, CoinGecko, and fallbacks)
+          const price = await fetchTokenPrice(contracts?.priceOracle, token.symbol);
+          
+          if (price !== null) {
+            // Fetch 24h change data (either from API or realistic simulation)
+            let change24h: number;
+            let priceSource = 'Simulated';
             
-            // Generate simulated data for other metrics
-            const change24h = (Math.random() * 20) - 10; // Random between -10% and +10%
-            const volume24h = Math.random() * 1000000 + 100000; // Random volume
-            const marketCap = priceNumber * (Math.random() * 1000000000 + 10000000); // Random market cap
+            try {
+              // Try to get real 24h change data from CoinGecko
+              const coinGeckoId = getCoinGeckoId(token.symbol);
+              if (coinGeckoId) {
+                const response = await fetch(`https://api.coingecko.com/api/v3/coins/${coinGeckoId}`);
+                const data = await response.json();
+                change24h = data.market_data?.price_change_percentage_24h || getSimulatedPriceChange();
+                
+                // If we got price from Chainlink but change data from CoinGecko
+                if (isConnected && contracts?.priceOracle) {
+                  priceSource = 'Chainlink';
+                } else {
+                  priceSource = 'CoinGecko';
+                }
+              } else {
+                change24h = getSimulatedPriceChange();
+              }
+            } catch (error) {
+              console.error(`Error fetching 24h change for ${token.symbol}:`, error);
+              change24h = getSimulatedPriceChange();
+            }
             
-            realMarketData.push({
+            // Calculate realistic volume and market cap based on price
+            const volume24h = calculateRealisticVolume(token.symbol, price);
+            const marketCap = calculateRealisticMarketCap(token.symbol, price);
+            
+            marketDataArray.push({
               symbol: token.symbol,
               name: token.name,
-              price: priceNumber,
+              price,
               change24h,
               volume24h,
               marketCap,
-              logoURI: token.logoURI
+              logoURI: token.logoURI,
+              priceSource
             });
-          } catch (error) {
-            console.error(`Error fetching data for ${token.symbol}:`, error);
           }
+        } catch (error) {
+          console.error(`Error processing market data for ${token.symbol}:`, error);
         }
-        
-        setMarketData(realMarketData);
-      } else {
-        // Generate simulated market data for development
-        const simulatedData: TokenMarketData[] = TOKENS.map(token => {
-          const basePrice = token.symbol === 'USDT' || token.symbol === 'USDC' ? 1 : 
-                           token.symbol === 'ETH' ? 3000 + (Math.random() * 200) :
-                           token.symbol === 'BTC' ? 50000 + (Math.random() * 2000) :
-                           token.symbol === 'XRP' ? 0.5 + (Math.random() * 0.1) :
-                           token.symbol === 'ADA' ? 0.4 + (Math.random() * 0.05) :
-                           token.symbol === 'DOT' ? 6 + (Math.random() * 0.5) :
-                           token.symbol === 'UNI' ? 5 + (Math.random() * 0.3) :
-                           token.symbol === 'ATOM' ? 10 + (Math.random() * 0.8) :
-                           token.symbol === 'LTC' ? 70 + (Math.random() * 5) :
-                           Math.random() * 100 + 1;
-          
-          const change24h = (Math.random() * 20) - 10; // Random between -10% and +10%
-          const volume24h = Math.random() * 1000000 + 100000; // Random volume
-          const marketCap = basePrice * (Math.random() * 1000000000 + 10000000); // Random market cap
-          
-          return {
-            symbol: token.symbol,
-            name: token.name,
-            price: basePrice,
-            change24h,
-            volume24h,
-            marketCap,
-            logoURI: token.logoURI
-          };
-        });
-        
-        setMarketData(simulatedData);
       }
+      
+      // Sort by market cap by default
+      const sortedData = marketDataArray.sort((a, b) => b.marketCap - a.marketCap);
+      setMarketData(sortedData);
     } catch (error) {
       console.error('Error fetching market data:', error);
-      // Fallback to simulated data on error
-      const fallbackData: TokenMarketData[] = TOKENS.map(token => ({
-        symbol: token.symbol,
-        name: token.name,
-        price: token.symbol === 'USDT' || token.symbol === 'USDC' ? 1 : Math.random() * 1000 + 1,
-        change24h: (Math.random() * 20) - 10,
-        volume24h: Math.random() * 1000000 + 100000,
-        marketCap: Math.random() * 10000000000 + 100000000,
-        logoURI: token.logoURI
-      }));
-      
-      setMarketData(fallbackData);
     } finally {
       setIsLoading(false);
     }
@@ -126,11 +120,16 @@ const MarketData: React.FC = () => {
     const sortableData = [...marketData];
     if (sortConfig.key) {
       sortableData.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+        
+        if (aValue !== undefined && bValue !== undefined) {
+          if (aValue < bValue) {
+            return sortConfig.direction === 'ascending' ? -1 : 1;
+          }
+          if (aValue > bValue) {
+            return sortConfig.direction === 'ascending' ? 1 : -1;
+          }
         }
         return 0;
       });
@@ -285,7 +284,20 @@ const MarketData: React.FC = () => {
                     <TableCell>
                       <div>
                         <div className="font-medium">{token.name}</div>
-                        <div className="text-xs text-muted-foreground">{token.symbol}</div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">{token.symbol}</span>
+                          {token.priceSource && (
+                            <span className={`text-[10px] px-1 py-0.5 rounded ${
+                              token.priceSource === 'Chainlink' 
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' 
+                                : token.priceSource === 'CoinGecko'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                            }`}>
+                              {token.priceSource}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-medium">

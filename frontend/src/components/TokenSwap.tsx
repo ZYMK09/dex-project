@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select } from './ui/select';
 import { ArrowDownUp, AlertCircle, Info } from 'lucide-react';
+import { fetchTokenPrice } from '../utils/priceUtils';
 
 interface Token {
   symbol: string;
@@ -26,62 +27,41 @@ const TokenSwap: React.FC = () => {
   const [slippage, setSlippage] = useState<number>(0.5); // Default 0.5% slippage
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Get real exchange rate from price oracle
+  // Get real exchange rate from price oracle or fallback sources
   useEffect(() => {
     const fetchExchangeRate = async () => {
       if (fromToken && toToken && fromAmount && parseFloat(fromAmount) > 0) {
         setErrorMessage(null);
         
         try {
-          // Get price from Chainlink oracle via price oracle contract
-          const { contracts, provider, isConnected } = useWeb3();
+          // Get the Web3 context
+          const { contracts, isConnected } = useWeb3();
           
-          // If we're in development and don't have provider or contracts, use simulated data
-          if (import.meta.env.DEV && (!isConnected || !provider || !contracts.priceOracle)) {
-            console.log('Development environment without provider, using simulated exchange rate');
-            const simulatedRate = Math.random() * 2000 + 1000; // Random rate between 1000 and 3000
-            setExchangeRate(simulatedRate);
+          // Fetch prices using the utility functions (handles all fallbacks)
+          const fromTokenPrice = await fetchTokenPrice(contracts?.priceOracle, fromToken.symbol);
+          const toTokenPrice = await fetchTokenPrice(contracts?.priceOracle, toToken.symbol);
+          
+          if (fromTokenPrice !== null && toTokenPrice !== null) {
+            // Calculate exchange rate (fromToken price in terms of toToken)
+            const rate = fromTokenPrice / toTokenPrice;
+            setExchangeRate(rate);
             
-            const calculatedAmount = parseFloat(fromAmount) * simulatedRate;
+            // Calculate output amount
+            const calculatedAmount = parseFloat(fromAmount) * rate;
             setToAmount(calculatedAmount.toFixed(6));
-            return;
-          }
-          
-          if (!isConnected || !provider || !contracts.priceOracle) {
-            throw new Error("Provider or price oracle not available");
-          }
-          
-          // Get prices in USD for both tokens directly using token addresses
-          const fromTokenPrice = await contracts.priceOracle.getPrice(
-            fromToken.address
-          );
-          const toTokenPrice = await contracts.priceOracle.getPrice(
-            toToken.address
-          );
-          
-          // Calculate exchange rate (fromToken price in terms of toToken)
-          const rate = parseFloat(fromTokenPrice.toString()) / parseFloat(toTokenPrice.toString());
-          setExchangeRate(rate);
-          
-          // Calculate output amount
-          const calculatedAmount = parseFloat(fromAmount) * rate;
-          setToAmount(calculatedAmount.toFixed(6));
-          
-          console.log(`Using real-time Chainlink price data: 1 ${fromToken.symbol} = ${rate.toFixed(6)} ${toToken.symbol}`);
-        } catch (error) {
-          console.error("Error fetching exchange rate:", error);
-          
-          // Fallback to simulated rate in case of error
-          if (import.meta.env.DEV) {
-            console.log('Error fetching real prices, falling back to simulated data');
-            const simulatedRate = Math.random() * 2000 + 1000;
-            setExchangeRate(simulatedRate);
             
-            const calculatedAmount = parseFloat(fromAmount) * simulatedRate;
-            setToAmount(calculatedAmount.toFixed(6));
+            console.log(`Exchange rate: 1 ${fromToken.symbol} = ${rate.toFixed(6)} ${toToken.symbol}`);
+            console.log(`Price source: ${isConnected && contracts?.priceOracle ? 'Chainlink' : 'CoinGecko/Fallback'}`);
           } else {
-            setErrorMessage("Could not fetch real-time price. Please try again later.");
+            throw new Error("Could not fetch token prices");
           }
+        } catch (error) {
+          console.error("Error calculating exchange rate:", error);
+          setErrorMessage("Could not fetch real-time price. Please try again later.");
+          
+          // Clear output amount on error
+          setToAmount('');
+          setExchangeRate(null);
         }
       } else {
         setToAmount('');

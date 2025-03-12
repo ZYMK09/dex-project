@@ -7,9 +7,10 @@ import { Input } from './ui/input';
 import { Select } from './ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { AlertCircle, CheckCircle2, DollarSign, TrendingUp } from 'lucide-react';
+import { fetchTokenPrice } from '../utils/priceUtils';
 
 const LimitOrderForm: React.FC = () => {
-  const { isConnected, contracts, account, provider } = useWeb3();
+  const { isConnected, contracts, account } = useWeb3();
   const [selectedPair, setSelectedPair] = useState(TRADING_PAIRS[0].name);
   const [price, setPrice] = useState('');
   const [amount, setAmount] = useState('');
@@ -34,60 +35,42 @@ const LimitOrderForm: React.FC = () => {
         
         if (!baseToken || !quoteToken) return;
 
-        // If we're in development and don't have provider or contracts, use simulated data
-        if (import.meta.env.DEV && (!isConnected || !provider || !contracts.priceOracle)) {
-          console.log('Development environment without provider, using simulated market price');
-          const simulatedPrice = Math.random() * 2000 + 1000; // Random price between 1000 and 3000
-          setCurrentMarketPrice(simulatedPrice);
+        // Fetch prices using the utility functions (handles all fallbacks)
+        const baseTokenPrice = await fetchTokenPrice(contracts?.priceOracle, baseToken.symbol);
+        const quoteTokenPrice = await fetchTokenPrice(contracts?.priceOracle, quoteToken.symbol);
+        
+        if (baseTokenPrice !== null && quoteTokenPrice !== null) {
+          // Calculate market price (baseToken price in terms of quoteToken)
+          const marketPrice = baseTokenPrice / quoteTokenPrice;
+          setCurrentMarketPrice(marketPrice);
           
-          // Set the price input to the simulated market price if empty
+          // Set the price input to the market price if empty
           if (!price) {
-            setPrice(simulatedPrice.toFixed(6));
+            setPrice(marketPrice.toFixed(6));
           }
-          return;
+          
+          console.log(`Exchange rate: 1 ${baseToken.symbol} = ${marketPrice.toFixed(6)} ${quoteToken.symbol}`);
+          console.log(`Price source: ${isConnected && contracts?.priceOracle ? 'Chainlink' : 'CoinGecko/Fallback'}`);
+        } else {
+          throw new Error("Could not fetch token prices");
         }
-        
-        if (!isConnected || !provider || !contracts.priceOracle) {
-          throw new Error("Provider or price oracle not available");
-        }
-        
-        // Get prices in USD for both tokens directly using token addresses
-        const baseTokenPrice = await contracts.priceOracle.getPrice(
-          baseToken.address
-        );
-        const quoteTokenPrice = await contracts.priceOracle.getPrice(
-          quoteToken.address
-        );
-        
-        // Calculate market price (baseToken price in terms of quoteToken)
-        const marketPrice = parseFloat(baseTokenPrice.toString()) / parseFloat(quoteTokenPrice.toString());
-        setCurrentMarketPrice(marketPrice);
-        
-        // Set the price input to the market price if empty
-        if (!price) {
-          setPrice(marketPrice.toFixed(6));
-        }
-        
-        console.log(`Using real-time Chainlink price data: 1 ${baseToken.symbol} = ${marketPrice.toFixed(6)} ${quoteToken.symbol}`);
       } catch (error) {
-        console.error("Error fetching market price:", error);
+        console.error("Error calculating market price:", error);
         
         // Fallback to simulated price in case of error
-        if (import.meta.env.DEV) {
-          console.log('Error fetching real prices, falling back to simulated data');
-          const simulatedPrice = Math.random() * 2000 + 1000;
-          setCurrentMarketPrice(simulatedPrice);
-          
-          // Set the price input to the simulated market price if empty
-          if (!price) {
-            setPrice(simulatedPrice.toFixed(6));
-          }
+        console.log('Error fetching real prices, falling back to simulated data');
+        const simulatedPrice = Math.random() * 2000 + 1000;
+        setCurrentMarketPrice(simulatedPrice);
+        
+        // Set the price input to the simulated market price if empty
+        if (!price) {
+          setPrice(simulatedPrice.toFixed(6));
         }
       }
     };
     
     fetchMarketPrice();
-  }, [selectedPair, contracts, provider, isConnected, price]);
+  }, [selectedPair, contracts, isConnected, price]);
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
